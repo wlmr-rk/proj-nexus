@@ -1,0 +1,37 @@
+name: data-sync
+
+on:
+  workflow_dispatch: # manual button
+  schedule:
+    - cron: "0 * * * *" # hourly (top of the hour)
+
+concurrency:
+  group: data-sync
+  cancel-in-progress: true # prevents overlap if a run is slow
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "18" }
+
+      - run: npm ci --ignore-scripts
+
+      # --- run the four fetchers ---
+      - run: node scripts/fetch-spotify.js
+      - run: node scripts/fetch-strava.js
+      - run: node scripts/fetch-leetcode.js
+      - run: node scripts/fetch-wakatime.js
+
+      # --- push whatever commits those scripts created ---
+      - name: Push changes
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
