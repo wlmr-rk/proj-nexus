@@ -11,7 +11,8 @@ const { spawn } = require("child_process");
 /* Configuration                                                      */
 /* ------------------------------------------------------------------ */
 
-const WEBSITE_REPO_PATH = "/home/wlmr/Code/myWebsite";
+const WEBSITE_REPO_PATH =
+  process.env.WEBSITE_REPO_PATH || "/home/wlmr/Code/myWebsite";
 const PUBLIC_DIR = path.join(WEBSITE_REPO_PATH, "public");
 
 /* ------------------------------------------------------------------ */
@@ -54,7 +55,13 @@ async function pushJson(fileName, data) {
   });
   console.log(`pushJson: wrote ${path.relative(WEBSITE_REPO_PATH, target)}`);
 
-  // 2️⃣  Git routine (identical to Anki exporter)
+  // 2️⃣  Skip git operations in CI - let workflow handle it
+  if (process.env.CI) {
+    console.log("pushJson: skipping git operations in CI environment");
+    return;
+  }
+
+  // 3️⃣  Git routine (identical to Anki exporter)
   try {
     await run("git", ["add", target], WEBSITE_REPO_PATH);
     await run(
