@@ -16,10 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout website repo
+        uses: actions/checkout@v4
+        with:
+          repository: wlmr-rk/wilmerlapuz.com
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          path: website
+
       - uses: actions/setup-node@v4
         with: { node-version: "18" }
 
       - run: npm ci --ignore-scripts
+
+      - name: Set website path
+        run: echo "WEBSITE_REPO_PATH=${{ github.workspace }}/website" >> $GITHUB_ENV
 
       # --- run the four fetchers ---
       - run: node scripts/fetch-spotify.js
@@ -27,10 +37,12 @@ jobs:
       - run: node scripts/fetch-leetcode.js
       - run: node scripts/fetch-wakatime.js
 
-      # --- push whatever commits those scripts created ---
-      - name: Push changes
+      # --- push whatever JSON files were created ---
+      - name: Push changes to website
         run: |
-          git config user.name  "github-actions[bot]"
+          cd website
+          git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/wlmr-rk/wilmerlapuz.com.git
+          git add public/*.json
+          git commit -m "chore: update data from proj-nexus" || exit 0
           git push
